@@ -91,8 +91,8 @@ namespace {
 
             auto label = cocos2d::CCLabelBMFont::create(rowText.c_str(), "chatFont.fnt");
             label->setAnchorPoint({0.0f, 0.5f});
-            label->setScale(0.45f);
-            label->setPosition({26.0f, kRowHeight / 2.0f + 1.5f});
+            label->setScale(0.55f);
+            label->setPosition({26.0f, kRowHeight});
             cellNode->addChild(label);
 
             RowData rowData;
