@@ -7,7 +7,7 @@
 		"ios": "2.2081"
 	},
 	"id": "guayand0.speedrun-splits",
-	"name": "speedrun-splits",
+	"name": "Speedrun Splits",
 	"version": "v1.0.0",
 	"developer": "Guayand0",
 	"description": "Adds a speedrun timer with checkpoint splits, PB tracking, and in-pause split record management for platformer levels.",
@@ -20,7 +20,9 @@
 		"utility",
 		"gameplay",
 		"interface",
-		"platformer"
+		"platformer",
+		"speedrun",
+		"timer"
 	],
 	"settings": {
 		"general-title": {
