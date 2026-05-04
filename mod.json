@@ -10,8 +10,7 @@
 	"name": "Speedrun Splits",
 	"version": "v1.0.0",
 	"developer": "Guayand0",
-	"description": "Adds a speedrun timer with checkpoint splits, PB tracking, and in-pause split record management for platformer levels.",
-	"repository": "https://github.com/Guayand0/GeometryDash-Mod-SpeedrunSplits",
+	"description": "Record your PBs in all platformer levels",
 	"links": {
 		"source": "https://github.com/Guayand0/GeometryDash-Mod-SpeedrunSplits",
 		"community": "https://discord.gg/RDaTJqdwMS"
@@ -20,9 +19,8 @@
 		"utility",
 		"gameplay",
 		"interface",
-		"platformer",
-		"speedrun",
-		"timer"
+		"offline",
+		"content"
 	],
 	"settings": {
 		"general-title": {
