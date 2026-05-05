@@ -4,6 +4,8 @@
 #include <cmath>
 #include <sstream>
 
+using namespace geode::prelude;
+
 namespace speedrun::utils {
     namespace {
         std::string formatWithMilliseconds(double seconds, int decimals, bool hideEmptyUnits) {
@@ -118,6 +120,16 @@ namespace speedrun::utils {
         }
 
         return stream.str();
+    }
+
+    std::vector<double> loadStoredTargets(GJGameLevel* level) {
+        return parseTargets(
+            Mod::get()->getSavedValue<std::string>(levelKey(level), "")
+        );
+    }
+
+    double loadStoredFinalTarget(GJGameLevel* level) {
+        return Mod::get()->getSavedValue<double>(finalLevelKey(level), 0.0);
     }
 
     std::string levelKey(GJGameLevel* level) {

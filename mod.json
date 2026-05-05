@@ -8,7 +8,7 @@
 	},
 	"id": "guayand0.speedrun-splits",
 	"name": "Speedrun Splits",
-	"version": "v1.0.0",
+	"version": "1.0.1",
 	"developer": "Guayand0",
 	"description": "Record your PBs in all platformer levels",
 	"links": {
@@ -16,11 +16,12 @@
 		"community": "https://discord.gg/RDaTJqdwMS"
 	},
 	"tags": [
-		"utility",
 		"gameplay",
 		"interface",
 		"offline",
-		"content"
+		"enhancement",
+		"content",
+		"utility"
 	],
 	"settings": {
 		"general-title": {

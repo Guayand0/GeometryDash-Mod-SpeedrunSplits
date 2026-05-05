@@ -1,33 +1,28 @@
 #include "SplitRecordsPopup.hpp"
 
-#include "../config/ModConfig.hpp"
+#include "SplitRecordsConfig.hpp"
+#include "SplitRecordsSettingsPopup.hpp"
+
 #include "../list/SplitRecords.hpp"
 #include "../utils/Utils.hpp"
 
 #include <Geode/Geode.hpp>
 #include <Geode/binding/CCMenuItemToggler.hpp>
-#include <Geode/modify/PauseLayer.hpp>
-#include <Geode/binding/PlayLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
 #include <Geode/ui/Scrollbar.hpp>
 
 #include <algorithm>
-#include <limits>
 
 using namespace geode::prelude;
 
 namespace {
-    constexpr char const* kPauseButtonMenuId = "speedrun-splits-pause-menu";
-    constexpr float kPauseButtonMarginLeft = 42.0f;
-    constexpr float kPauseButtonMarginBottom = 38.0f;
     constexpr float kPopupWidth = 320.0f;
     constexpr float kPopupHeight = 230.0f;
     constexpr float kScrollWidth = 270.0f;
     constexpr float kScrollHeight = 135.0f;
     constexpr float kRowHeight = 24.0f;
-    constexpr float kColumnWidth = (kScrollWidth - 20.0f) / 2.0f;
 
     class SplitRecordsPopup final : public geode::Popup {
     protected:
@@ -43,6 +38,7 @@ namespace {
         cocos2d::CCLabelBMFont* m_emptyLabel = nullptr;
         cocos2d::CCLabelBMFont* m_checkpointCountLabel = nullptr;
         CCMenuItemToggler* m_selectAllToggle = nullptr;
+        CCMenuItemSpriteExtra* m_settingsButton = nullptr;
         CCMenuItemSpriteExtra* m_deleteAllButton = nullptr;
         CCMenuItemSpriteExtra* m_deleteSelectedButton = nullptr;
         std::vector<RowData> m_rows;
@@ -65,8 +61,11 @@ namespace {
             cocos2d::CCMenu* menu,
             cocos2d::CCPoint const& position
         ) {
+            auto columns = speedrun::ui::records::columns();
+            auto columnWidth = speedrun::ui::records::columnWidth(kScrollWidth, columns);
+
             auto cellNode = cocos2d::CCNode::create();
-            cellNode->setContentSize({kColumnWidth, kRowHeight});
+            cellNode->setContentSize({columnWidth, kRowHeight});
             cellNode->setAnchorPoint({0.0f, 0.5f});
             cellNode->setPosition(position);
             parent->addChild(cellNode);
@@ -91,7 +90,7 @@ namespace {
 
             auto label = cocos2d::CCLabelBMFont::create(rowText.c_str(), "chatFont.fnt");
             label->setAnchorPoint({0.0f, 0.5f});
-            label->setScale(0.55f);
+            label->setScale(speedrun::ui::records::textScale());
             label->setPosition({26.0f, kRowHeight});
             cellNode->addChild(label);
 
@@ -144,7 +143,7 @@ namespace {
             m_checkpointCountLabel = cocos2d::CCLabelBMFont::create("CPs: 0", "goldFont.fnt");
             m_checkpointCountLabel->setAnchorPoint({1.0f, 0.5f});
             m_checkpointCountLabel->setScale(0.45f);
-            m_checkpointCountLabel->setPosition({kPopupWidth - 16.0f, kPopupHeight - 34.0f});
+            m_checkpointCountLabel->setPosition({kPopupWidth - 46.0f, kPopupHeight - 34.0f});
             m_mainLayer->addChild(m_checkpointCountLabel);
 
             auto buttonMenu = cocos2d::CCMenu::create();
@@ -165,6 +164,19 @@ namespace {
             m_selectAllToggle->setPosition({54.0f, kPopupHeight - 34.0f});
             m_selectAllToggle->toggle(false);
             buttonMenu->addChild(m_selectAllToggle);
+
+            cocos2d::CCNode* settingsIcon = CCSprite::createWithSpriteFrameName("GJ_optionsBtn_001.png");
+            if (!settingsIcon) {
+                settingsIcon = CCLabelBMFont::create("G", "goldFont.fnt");
+            }
+            settingsIcon->setScale(0.6f);
+            m_settingsButton = CCMenuItemSpriteExtra::create(
+                settingsIcon,
+                this,
+                menu_selector(SplitRecordsPopup::onOpenSettings)
+            );
+            m_settingsButton->setPosition({kPopupWidth - 24.0f, kPopupHeight - 22.0f});
+            buttonMenu->addChild(m_settingsButton);
 
             auto trashSpr = geode::CircleButtonSprite::createWithSpriteFrameName(
                 "GJ_trashBtn_001.png",
@@ -226,8 +238,15 @@ namespace {
             m_scrollLayer->m_contentLayer->removeAllChildrenWithCleanup(true);
 
             auto records = speedrun::list::loadStoredSplitRecords(m_level);
+            if (!speedrun::ui::records::showFinal()) {
+                std::erase_if(records, [](auto const& record) {
+                    return record.m_isFinal;
+                });
+            }
+
             auto hasRows = !records.empty();
             auto checkpointCount = records.size();
+            auto columns = speedrun::ui::records::columns();
 
             m_scrollLayer->setVisible(hasRows);
             m_emptyLabel->setVisible(!hasRows);
@@ -243,7 +262,8 @@ namespace {
                 return;
             }
 
-            auto visualRowCount = (records.size() + 1) / 2;
+            auto visualRowCount =
+                (records.size() + static_cast<size_t>(columns) - 1) / static_cast<size_t>(columns);
             auto contentHeight = std::max(
                 kScrollHeight,
                 6.0f + static_cast<float>(visualRowCount) * kRowHeight
@@ -253,9 +273,6 @@ namespace {
             auto startY = contentHeight - 14.0f;
 
             for (size_t rowIndex = 0; rowIndex < visualRowCount; ++rowIndex) {
-                auto leftIndex = rowIndex * 2;
-                auto rightIndex = leftIndex + 1;
-
                 auto rowNode = cocos2d::CCNode::create();
                 rowNode->setContentSize({kScrollWidth - 8.0f, kRowHeight});
                 rowNode->setAnchorPoint({0.0f, 0.5f});
@@ -266,21 +283,21 @@ namespace {
                 rowMenu->setPosition({0.0f, 0.0f});
                 rowNode->addChild(rowMenu);
 
-                this->addRecordCell(
-                    records[leftIndex],
-                    leftIndex,
-                    rowNode,
-                    rowMenu,
-                    cocos2d::CCPoint{0.0f, 0.0f}
-                );
+                for (int column = 0; column < columns; ++column) {
+                    auto recordIndex = rowIndex * static_cast<size_t>(columns) + static_cast<size_t>(column);
+                    if (recordIndex >= records.size()) {
+                        continue;
+                    }
 
-                if (rightIndex < records.size()) {
+                    auto columnX = column == 0
+                        ? 0.0f
+                        : speedrun::ui::records::columnWidth(kScrollWidth, columns) + 12.0f;
                     this->addRecordCell(
-                        records[rightIndex],
-                        rightIndex,
+                        records[recordIndex],
+                        recordIndex,
                         rowNode,
                         rowMenu,
-                        cocos2d::CCPoint{kColumnWidth + 12.0f, 0.0f}
+                        cocos2d::CCPoint{columnX, 0.0f}
                     );
                 }
             }
@@ -315,6 +332,11 @@ namespace {
                 m_selectAllToggle->setOpacity(hasRows ? 255 : 90);
                 m_selectAllToggle->toggle(hasRows && allSelected);
             }
+
+            if (m_settingsButton) {
+                m_settingsButton->setEnabled(true);
+                m_settingsButton->setOpacity(255);
+            }
         }
 
         void onToggleRow(cocos2d::CCObject* sender) {
@@ -324,6 +346,12 @@ namespace {
             }
 
             this->queueActionButtonRefresh();
+        }
+
+        void onOpenSettings(cocos2d::CCObject*) {
+            speedrun::ui::showSplitRecordsSettingsPopup([this]() {
+                this->reloadRows();
+            });
         }
 
         void onToggleAll(cocos2d::CCObject* sender) {
@@ -433,56 +461,3 @@ namespace speedrun::ui {
         }
     }
 }
-
-class $modify(SpeedrunSplitsPauseLayer, PauseLayer) {
-    void customSetup() {
-        PauseLayer::customSetup();
-
-        auto playLayer = PlayLayer::get();
-        if (!playLayer || !playLayer->m_isPlatformer || !speedrun::config::modEnabled()) {
-            return;
-        }
-
-        if (this->getChildByID(kPauseButtonMenuId)) {
-            return;
-        }
-
-        cocos2d::CCNode* icon = CCSprite::createWithSpriteFrameName("GJ_timeIcon_001.png");
-        if (!icon) {
-            icon = CCSprite::createWithSpriteFrameName("GJ_stopWatchIcon_001.png");
-        }
-        if (!icon) {
-            icon = CCLabelBMFont::create("T", "goldFont.fnt");
-        }
-
-        auto buttonSprite = geode::CircleButtonSprite::create(
-            icon,
-            geode::CircleBaseColor::Green,
-            geode::CircleBaseSize::Small
-        );
-
-        auto button = CCMenuItemSpriteExtra::create(
-            buttonSprite,
-            this,
-            menu_selector(SpeedrunSplitsPauseLayer::onOpenSplitRecords)
-        );
-        button->setID("speedrun-splits-records-button");
-
-        auto menu = cocos2d::CCMenu::create();
-        menu->setID(kPauseButtonMenuId);
-        menu->setPosition({kPauseButtonMarginLeft, kPauseButtonMarginBottom});
-        this->addChild(menu);
-
-        button->setPosition({0.0f, 0.0f});
-        menu->addChild(button);
-    }
-
-    void onOpenSplitRecords(cocos2d::CCObject*) {
-        auto playLayer = PlayLayer::get();
-        if (!playLayer) {
-            return;
-        }
-
-        speedrun::ui::showSplitRecordsPopup(playLayer->m_level);
-    }
-};

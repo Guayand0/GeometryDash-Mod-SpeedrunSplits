@@ -12,6 +12,8 @@ namespace speedrun::utils {
     std::string formatMainTimerTime(double seconds, std::string const& format, int decimals);
     std::vector<double> parseTargets(std::string const& serialized);
     std::string serializeTargets(std::vector<double> const& targets);
+    std::vector<double> loadStoredTargets(GJGameLevel* level);
+    double loadStoredFinalTarget(GJGameLevel* level);
     std::string levelKey(GJGameLevel* level);
     std::string finalLevelKey(GJGameLevel* level);
 }

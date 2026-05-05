@@ -7,9 +7,7 @@ using namespace geode::prelude;
 namespace speedrun::list {
     std::vector<StoredSplitRecord> loadStoredSplitRecords(GJGameLevel* level) {
         std::vector<StoredSplitRecord> records;
-        auto targets = speedrun::utils::parseTargets(
-            Mod::get()->getSavedValue<std::string>(speedrun::utils::levelKey(level), "")
-        );
+        auto targets = speedrun::utils::loadStoredTargets(level);
 
         for (size_t i = 0; i < targets.size(); ++i) {
             StoredSplitRecord record;
@@ -21,10 +19,7 @@ namespace speedrun::list {
             records.push_back(std::move(record));
         }
 
-        auto finalPb = Mod::get()->getSavedValue<double>(
-            speedrun::utils::finalLevelKey(level),
-            0.0
-        );
+        auto finalPb = speedrun::utils::loadStoredFinalTarget(level);
         if (finalPb > 0.0) {
             StoredSplitRecord finalRecord;
             finalRecord.m_index = targets.size();
@@ -48,9 +43,7 @@ namespace speedrun::list {
         std::vector<size_t> const& checkpointIndices,
         bool clearFinal
     ) {
-        auto targets = speedrun::utils::parseTargets(
-            Mod::get()->getSavedValue<std::string>(speedrun::utils::levelKey(level), "")
-        );
+        auto targets = speedrun::utils::loadStoredTargets(level);
 
         for (auto checkpointIndex : checkpointIndices) {
             if (checkpointIndex < targets.size()) {
